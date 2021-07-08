@@ -106,6 +106,16 @@ def fortran_format_str(fortran_format: str, values: List) -> str:
   return writer.write(values)
 
 
+def filter_eqw(eqw_df: pd.DataFrame, eqw_filter: float, cols=None) -> pd.DataFrame:
+  # Filter dataframe by equivalent width and return the new DataFrame, or
+  # a specified column
+  filtered_df = eqw_df[eqw_df['eqw'] >= eqw_filter]
+  if cols:
+    return filtered_df[cols]
+  else:
+    return filtered_df
+
+
 def read_eqw_file(eqw_file: str) -> pd.DataFrame:
   # Read in equivalent-width measurement file as a DataFrame
   eqw_df = pd.read_fwf(eqw_file)
@@ -115,7 +125,6 @@ def read_eqw_file(eqw_file: str) -> pd.DataFrame:
   eqw_df.columns = ['element', 'ion', 'wl', 'exc', 'loggf', 'eqw']
 
   return eqw_df
-  # nonzero_eqw = ew_df[ew_df.ew > 1]
 
 
 def substitute_num_lines_in_header(header: str, new_num: int) -> str:
@@ -132,8 +141,9 @@ def read_line_file(line_file: str, eqw_filter_file=None, eqw_filter=1):
   line_list = {}  # key is element/ionisation, value is list of lines
   if eqw_filter_file:
     eqw_df = read_eqw_file(eqw_filter_file)
-    eqw_df.set_index('wl', inplace=True)
-
+    filtered_df = filter_eqw(eqw_df, eqw_filter,
+                             ['wl', 'eqw'])
+    wavelengths = list(filtered_df['wl'].values)
   # Perhaps create a LineList class to hold the data?
   # Read line-by-line
   # There are 2 lines of headers before each collection of lines, each starts
@@ -177,13 +187,16 @@ def read_line_file(line_file: str, eqw_filter_file=None, eqw_filter=1):
 
         # print(key, num_lines)
         lines = []
-        lines.append(header)
-        lines.append(parse_line(text, header))
+        # Check 'text' wavelength / eqw here!
+        line = parse_line(text, header)
+        if float(line.wavelength) in wavelengths:
+          lines.append(header)
+          lines.append(parse_line(text, header))
         for i in range(num_lines - 1):  # first line was already read
           # Check if line passes EQW filter test
           line = parse_line(infile.readline().rstrip(), header)
           if eqw_filter_file:
-            if eqw_df[line.wavelength] >= eqw_filter:
+            if float(line.wavelength) in wavelengths:
               lines.append(line)
             else:
               output_num_lines -= 1
@@ -289,7 +302,11 @@ if __name__ == "__main__":
   spec_file = f"{res_dir}/{identifier}.spec"
   eqw_file = f"{res_dir}/{identifier}.eqw"
 
-  line_list = read_line_file(line_file)
+  # EQW filter
+  eqw_filter = 1
+
+  line_list = read_line_file(line_file, eqw_filter_file=eqw_file,
+                             eqw_filter=eqw_filter)
   # for key, value in line_list.items():
   # print(key)
   # print(value)
