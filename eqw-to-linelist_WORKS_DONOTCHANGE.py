@@ -49,9 +49,8 @@ eqw = pd.read_fwf('old_linelists/5777g4.44z+0.00a+0.00t01-ref107857_4800-5300_xi
 eqw = eqw.drop(eqw.columns[[6,7,8,9,10,11,12]], axis =1) 
 eqw.columns = ['element', 'ion', 'wl', 'exc', 'loggf', 'ew'] 
 
-nonzero_eqw = eqw[eqw.ew > 1][0:10]
-print(nonzero_eqw)
-exit()
+nonzero_eqw = eqw[eqw.ew > 1][50:100] #determines how long this program will run lol
+#print(nonzero_eqw)
 #print(nonzero_eqw[0])
 # pdb.set_trace()
 pairs = []
@@ -116,7 +115,7 @@ for i in range(2,int(len(pairs))-1,2):
     print(i)
 # pdb.set_trace()
 #np.save('vald-4800-5300_Parr.npy', Parr)    
-with open('test.txt', 'w') as f:
+with open('test_1.txt', 'w') as f:
     for i in range(len(Parr)):
         f.writelines(Parr[i][0][0])
         f.write('\n')

@@ -14,7 +14,7 @@ def make_lists():
 	global sublist_number
 
         # Get the name of the list
-	list_name = glob.glob('valdLinelist-4800-5300.txt')
+	list_name = glob.glob('test_1.txt')[0]
 
         # Get the number of lines in the list
 	list_size = subprocess.run(['wc', '-l', list_name], stdout=subprocess.PIPE).stdout.decode('utf-8')
@@ -22,7 +22,6 @@ def make_lists():
         # Generate the request lists
 	starting_line = 1	
 	request_number = 1
-	pdb.set_trace()
 	while starting_line <= list_size:
                 # Create the head (if this is the first request list)
 		if starting_line == 1:
@@ -33,12 +32,9 @@ def make_lists():
 			os.system('tail -n +'+str(starting_line)+' '+list_name+' | head -'+str(sublist_number)+' > _spec'+str(request_number)+'.txt')
 
                 # Update the starting line and request number by adding 800
-		if request_number == 1:
-			starting_line = starting_line + 808
-		else: 
-			starting_line = starting_line + sublist_number
-			request_number = request_number + 1
-
+		print(request_number)
+		starting_line = starting_line + sublist_number
+		request_number = request_number + 1
         # Print the master list size and the summed request list sizes for comparison
 	print('Master List Size: '+str(list_size)+'\n')	
 	os.system('wc -l _spec*.txt')

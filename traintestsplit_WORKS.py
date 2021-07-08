@@ -29,24 +29,16 @@ wl_entries = []
 f_entries = []
 start = 0
 arraynum = 0
-five_loop = 0
-sets_of_five = np.array(range(4800,5300,5))
 for i in range(len(wlspec_arr)): 
     for j in range(len(wlspec_arr[i])):
         if start >= 500:
-           # wl_entries = []
+            wl_entries = []
             f_entries = []
             start = 0
             arraynum += 1
-            five_loop +=1 
-        #if five_loop >= 100:
-           # five_loop = 0 
-       # wavelength = wlspec_arr[i][j]
-        #low = sets_of_five[five_loop]
-        #wavelength = (wavelength - low)/5
-        #wl_entries.append(wavelength)
+        wl_entries.append(wlspec_arr[i][j])
         f_entries.append(Fn_arr[i][j])
-        #wldict[arraynum] = wl_entries
+        wldict[arraynum] = wl_entries
         fdict[arraynum] = f_entries
         start += 1
 #***reading in equivalent widths
@@ -61,43 +53,27 @@ for i in range(len(list_of_dfs)):
     eqw = eqw.drop(eqw.columns[[6,7,8,9,10,11,12]], axis =1)
     eqw.columns = ['element','ion','wl','exc', 'loggf', 'ew'] 
     eqw.dropna(subset = ['loggf', 'ew'], inplace = True )
-    wleqw_arr.append(eqw['wl'].values)
-    eqw_arr.append(eqw['ew'].values)
+    wleqw_arr.append(eqw['wl'])
+    eqw_arr.append(eqw['ew'])
 reduced_eqw = []
-reduced_wl = []
 for i in range(len(wleqw_arr)):
-    templist_eqw = []
-    templist_wl = []
+    templist = []
     for j in range(len(wleqw_arr[i])):
-        if five_loop >= 100:
-            five_loop = 0 
-        wavelength = wlspec_arr[i][j]
-        low = sets_of_five[five_loop]
-        wavelength = (wavelength - low)/5
-        templist_wl.append(wavelength)
-        templist_eqw.append(((eqw_arr[i][j])/(wavelength)).round(decimals=3))
-    reduced_wl.append(templist_wl)    
-    reduced_eqw.append(templist_eqw)
+        templist.append(np.log10(float(eqw_arr[i][j])/float(wleqw_arr[i][j])).round(decimals=3))
+    reduced_eqw.append(templist)
 #***inputs (5A windows)
 X = []
-Y_cw1 = []
-Y_cw2 = []
-Y_eqw1 = []
-Y_eqw2 = []
-#wldict_edit = dict([])
+Y = []
+wldict_edit = dict([])
 count = 0
 n = 0
 k = 0
+pdb.set_trace()
 for i in range(len(fdict)):
-    minima = find_peaks(fdict[i]) 
+    minima = find_peaks(fdict[i]) #checking if there are minima in a single 5A window
     k += 1
-    if len(minima[0]) == 2 and (reduced_eqw[n][count*2] != -inf and reduced_eqw[n][count*2+1] != -inf):
-    #if len(minima[0]) == 2 and (eqw_arr[n][count*2] != 0 and eqw_arr[n][count*2+1] != 0):
-        Y_cw1.append(reduced_wl[n][count*2])
-        Y_cw2.append(reduced_wl[n][count*2+1])
-        Y_eqw1.append(reduced_eqw[n][count*2])
-        Y_eqw2.append(reduced_eqw[n][count*2+1])
-        #Y.append(np.array([reduced_wl[n][count*2],reduced_wl[n][count*2+1],reduced_eqw[n][count*2],reduced_eqw[n][count*2+1]]))
+    if len(minima[0]) == 2 and (reduced_eqw[n][count*2] and reduced_eqw[n][count*2+1]) != -inf:
+        Y.append(np.array([wleqw_arr[n][count*2],wleqw_arr[n][count*2+1],reduced_eqw[n][count*2],reduced_eqw[n][count*2+1]]))
         count += 1
         X.append(fdict[i])
     if k == 100:
@@ -106,14 +82,21 @@ for i in range(len(fdict)):
         n += 1 
 
 X = np.array(X)
-Y = np.array([[Y_cw1, Y_eqw1],[Y_cw2, Y_eqw2]]) #wack
+#***outputs (central wl 1, central wl 2, eqw 1,  eqw 2)
+# for i in range(len(wldict_edit)):
+#     for j in range(0,len(wleqw_arr)-1,2):
+#         if (wleqw_arr[j] and wleqw_arr[j+1]) > wldict_edit[i][0] and (wleqw_arr[j] and wleqw_arr[j+1]) < wldict_edit[i][-1]:
+#             Y.append([wleqw_arr[j],wleqw_arr[j+1],reduced_eqw[j],reduced_eqw[j+1]])
+Y = np.array(Y)
+#plt.plot(wlspec_arr, Fn_arr)
+#plt.xlim(4800,4850)
+#plt.show()
 pdb.set_trace()
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.25, random_state=42)
-pdb.set_trace()
-np.save('traintestsplits_initial.npy',[X_train,Y_train,X_val, Y_val, X_test, Y_test])
-np.save('nonsplitdata_X.npy', X)
-np.save('nonsplitdata_Y.npy', Y)
+#pdb.set_trace()
+#np.save('traintestsplits.npy',[X_train,Y_train,X_val, Y_val, X_test, Y_test])
+
 #want an svr in there too ig 
 #from sklearn import linear_model
 #needs different shape (1d): linear_model.BayesianRidge(), linear_model.ARDRegression(), linear_model.LogisticRegression(), , linear_model.SGDRegressor()
