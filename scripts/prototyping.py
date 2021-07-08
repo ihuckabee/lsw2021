@@ -6,6 +6,7 @@ from typing import Dict, List
 import fortranformat as ff
 from itertools import permutations
 from copy import copy
+import numpy as np
 import pandas as pd
 
 
@@ -234,7 +235,6 @@ def write_line_file(line_list: Dict, output_path: str):
 def write_pairs_line_list(line_list: Dict, output_path: str):
   # From a specified line list (conventionally parsed from 'read_line_file()'),
   # pair every line and create a new line list with the pairs
-  # TODO: Add wavelength ranges and change the pair wavelengths
   # Generate permutations of headers + list indices (unique IDs)
   line_collection_dict = line_list.values()
   # Figure out mapping from line -> header...
@@ -253,6 +253,8 @@ def write_pairs_line_list(line_list: Dict, output_path: str):
   output_lines = []
   for pair in pairs:
     for line in pair:
+      # Random shift in wavelength
+      current_wavelength += np.random.uniform(-1, 1)
       new_line = copy(line)
       new_line.wavelength = current_wavelength
 
@@ -291,7 +293,6 @@ def write_pairs_line_list(line_list: Dict, output_path: str):
       outfile.write(f"{str(line_collection)}")
 
   print("Done writing file")
-  exit()
 
 
 if __name__ == "__main__":
@@ -315,4 +316,4 @@ if __name__ == "__main__":
   output_file = f"{out_dir}/test.list"
   write_pairs_line_list(line_list, output_file)
 
-  write_line_file(line_list, output_file)
+  # write_line_file(line_list, output_file)
