@@ -6,6 +6,7 @@ from typing import Dict, List
 import fortranformat as ff
 from itertools import permutations
 from copy import copy
+import pandas as pd
 
 
 @dataclass
@@ -37,7 +38,7 @@ class Line:
     # Line -> string as expected in a TS line list
     # Fixed width fortran format
     # TODO: Fix output format to be proper fixed-width!
-    output_format = r"(F10.3,1X,2(F6.3,1X),F8.3,1X,F6.1,1X,1PE8.2,2(1X,A3),1X,2(0PF6.1,1X),A)"
+    output_format = r"(F10.3,2(F7.3),F9.3,1X,F6.1,1X,1PE9.2,2(1X,A3),2(0PF6.1,1X),A)"
     output_str = fortran_format_str(output_format,
                                     [float(self.wavelength),
                                      float(self.excitation_energy),
@@ -105,10 +106,33 @@ def fortran_format_str(fortran_format: str, values: List) -> str:
   return writer.write(values)
 
 
-def read_line_file(line_file: str):
+def read_eqw_file(eqw_file: str) -> pd.DataFrame:
+  # Read in equivalent-width measurement file as a DataFrame
+  eqw_df = pd.read_fwf(eqw_file)
+  # for data with comments
+  eqw_df = eqw_df.drop(eqw_df.columns[[13, 14, 15]], axis=1)
+  eqw_df = eqw_df.drop(eqw_df.columns[[6, 7, 8, 9, 10, 11, 12]], axis=1)
+  eqw_df.columns = ['element', 'ion', 'wl', 'exc', 'loggf', 'eqw']
+
+  return eqw_df
+  # nonzero_eqw = ew_df[ew_df.ew > 1]
+
+
+def substitute_num_lines_in_header(header: str, new_num: int) -> str:
+  # Replace the numebr of lines in the header with the 'new_num' specified
+  pattern = re.compile(r"\d+(\D*)$")
+  return pattern.sub(str(new_num), header)
+
+
+def read_line_file(line_file: str, eqw_filter_file=None, eqw_filter=1):
   # Open a valid Turbospectrum line list, read it line-by-line and return a
   # collection of all the line data
+  # If 'eqw_filter_file' is provided, use the eqw_filter to remove lines that
+  # have an equivalent width less than filter
   line_list = {}  # key is element/ionisation, value is list of lines
+  if eqw_filter_file:
+    eqw_df = read_eqw_file(eqw_filter_file)
+    eqw_df.set_index('wl', inplace=True)
 
   # Perhaps create a LineList class to hold the data?
   # Read line-by-line
@@ -118,7 +142,7 @@ def read_line_file(line_file: str):
   # element, the ionisation level, and the number of lines to expect
   # The second starts with '[aA-zZ] and contains the string identifier of the
   # element & ionisation stage
-  mass_info_header_pattern = re.compile("^'   [0-9]")
+  mass_info_header_pattern = re.compile(r"^'\s+[0-9]")
   element_info_header_pattern = re.compile("^'[A-Z]")
   with open(line_file, 'r', encoding='utf-8') as infile:
     num_lines = 0  # number of lines to read under current header
@@ -128,8 +152,8 @@ def read_line_file(line_file: str):
     # Read file line-by-line
     while True:
       count += 1
-      if count > 13:
-        break
+      # if count > 13:
+      #   break
       text = infile.readline()
       if not text:
         break
@@ -149,18 +173,32 @@ def read_line_file(line_file: str):
         continue
       else:
         # Read 'num_lines' lines
+        output_num_lines = num_lines
+
         # print(key, num_lines)
         lines = []
         lines.append(header)
         lines.append(parse_line(text, header))
         for i in range(num_lines - 1):  # first line was already read
+          # Check if line passes EQW filter test
           line = parse_line(infile.readline().rstrip(), header)
-          lines.append(line)
+          if eqw_filter_file:
+            if eqw_df[line.wavelength] >= eqw_filter:
+              lines.append(line)
+            else:
+              output_num_lines -= 1
+          else:
+            lines.append(line)
 
         # Create LineCollection
         # line_collection = LineCollection(float(mass), ion, element_ion,
         #                                  num_lines, lines[1:])
-        line_collection = LineCollection(*header.split('\n')[:-1], lines[1:])
+        # TODO: Edit header 1 to use output_num_lines not the num_lines we
+        # started with
+        header_1, header_2, _ = header.split('\n')
+        header_1 = substitute_num_lines_in_header(header_1, output_num_lines)
+
+        line_collection = LineCollection(header_1, header_2, lines[1:])
 
         # Add to line list dictionary
         line_list[key] = line_collection
@@ -191,10 +229,11 @@ def write_pairs_line_list(line_list: Dict, output_path: str):
            for line in value.lines]
   pairs = permutations(lines, 2)
   # print(len(lines))
-  # print(list(pairs))
+  # print(len(list(pairs)))
 
   # Edit wavelengths
   start_wavelength = 3000  # angstroms
+  max_wavelength = 10000  # angstroms
   wavelength_step = 5  # between each line
   current_wavelength = start_wavelength
 
@@ -206,7 +245,10 @@ def write_pairs_line_list(line_list: Dict, output_path: str):
 
       output_lines.append(new_line)
       current_wavelength += wavelength_step
+    if current_wavelength > max_wavelength:
+      break
 
+  print("Done changing wavelengths")
   # Create line collections
   # If lines have the same header, they are part of the same collection
   line_collection_dict = {}  # key: header, value: list of valid lines
@@ -217,16 +259,25 @@ def write_pairs_line_list(line_list: Dict, output_path: str):
     else:
       line_collection_dict[key].append(line)
 
+  print("Done creating line collection dictionary")
+
   line_collections = []
   # Create LineCollection for each key
   for key, lines in line_collection_dict.items():
-    line_collection = LineCollection(*key.split('\n')[:-1], lines)
+    # Change num lines in header_1
+    header_1, header_2, _ = key.split('\n')
+    header_1 = substitute_num_lines_in_header(header_1, len(lines))
+
+    line_collection = LineCollection(header_1, header_2, lines)
     line_collections.append(line_collection)
+
+  print("Done creating line collections list")
 
   with open(output_path, 'w', encoding='utf-8') as outfile:
     for line_collection in line_collections:
       outfile.write(f"{str(line_collection)}")
 
+  print("Done writing file")
   exit()
 
 
@@ -239,10 +290,10 @@ if __name__ == "__main__":
   eqw_file = f"{res_dir}/{identifier}.eqw"
 
   line_list = read_line_file(line_file)
-  for key, value in line_list.items():
-    print(key)
-    print(value)
-    # print('\n'.join([f"\t{v}\n" for v in value]))
+  # for key, value in line_list.items():
+  # print(key)
+  # print(value)
+  # print('\n'.join([f"\t{v}\n" for v in value]))
 
   output_file = f"{out_dir}/test.list"
   write_pairs_line_list(line_list, output_file)
