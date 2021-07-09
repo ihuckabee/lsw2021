@@ -8,6 +8,7 @@ from itertools import permutations
 from copy import copy
 import numpy as np
 import pandas as pd
+import math
 
 
 @dataclass
@@ -144,8 +145,13 @@ def read_line_file(line_file: str, eqw_filter_file=None, eqw_filter=1):
     eqw_df = read_eqw_file(eqw_filter_file)
     filtered_df = filter_eqw(eqw_df, eqw_filter,
                              ['wl', 'eqw'])
-    wavelengths = list(filtered_df['wl'].values)
-  # Perhaps create a LineList class to hold the data?
+
+    wavelengths = []
+    for val in filtered_df['wl']:
+      num, decimal = str(round(val, 3)).split('.')
+      wavelength = f"{num}.{decimal.ljust(3, '0')}"
+      wavelengths.append(wavelength)
+
   # Read line-by-line
   # There are 2 lines of headers before each collection of lines, each starts
   # with an apostrophe '
@@ -186,18 +192,17 @@ def read_line_file(line_file: str, eqw_filter_file=None, eqw_filter=1):
         # Read 'num_lines' lines
         output_num_lines = num_lines
 
-        # print(key, num_lines)
         lines = []
         # Check 'text' wavelength / eqw here!
         line = parse_line(text, header)
-        if float(line.wavelength) in wavelengths:
-          lines.append(header)
+        if line.wavelength in wavelengths:
           lines.append(parse_line(text, header))
+
         for i in range(num_lines - 1):  # first line was already read
           # Check if line passes EQW filter test
           line = parse_line(infile.readline().rstrip(), header)
           if eqw_filter_file:
-            if float(line.wavelength) in wavelengths:
+            if line.wavelength in wavelengths:
               lines.append(line)
             else:
               output_num_lines -= 1
@@ -205,14 +210,10 @@ def read_line_file(line_file: str, eqw_filter_file=None, eqw_filter=1):
             lines.append(line)
 
         # Create LineCollection
-        # line_collection = LineCollection(float(mass), ion, element_ion,
-        #                                  num_lines, lines[1:])
-        # TODO: Edit header 1 to use output_num_lines not the num_lines we
-        # started with
         header_1, header_2, _ = header.split('\n')
         header_1 = substitute_num_lines_in_header(header_1, output_num_lines)
 
-        line_collection = LineCollection(header_1, header_2, lines[1:])
+        line_collection = LineCollection(header_1, header_2, lines)
 
         # Add to line list dictionary
         line_list[key] = line_collection
@@ -240,9 +241,10 @@ def write_pairs_line_list(line_list: Dict, output_path: str):
   # Figure out mapping from line -> header...
   lines = [line for i, value in enumerate(line_collection_dict)
            for line in value.lines]
+  print([line.wavelength for line in lines])
   pairs = permutations(lines, 2)
-  # print(len(lines))
-  # print(len(list(pairs)))
+  print(len(lines))
+  print(len(list(pairs)))
 
   # Edit wavelengths
   start_wavelength = 3000  # angstroms
