@@ -29,7 +29,7 @@ import pdb
 import numpy as np
 from scipy.signal import find_peaks
 from scipy.signal import peak_widths
-eqw = pd.read_fwf('5777g4.44z+0.00a+0.00t01-ref107857_4800-5300_xit1.0_bigboi1_1.eqw')
+eqw = pd.read_fwf('5777g4.44z+0.00a+0.00t01-ref107857_3000-3500_xit1.0_test.eqw')
 #ignoredcol = ['0.000.1','+-','1.000','0.00', '1.050', '1.050.1', '1.050.2'] #4800-5300, 5800-6300, 6300-6800
 #ignoredcol = ['0.000.1','+-','1.000','0.00', '1.380', '1.380.1', '1.380.2'] #5300-5800
 #ignoredcol = ['0.000','+-','1.000','0.00', '7.510', '7.510.1', '7.510.2'] #Si starter
@@ -38,7 +38,7 @@ eqw = pd.read_fwf('5777g4.44z+0.00a+0.00t01-ref107857_4800-5300_xit1.0_bigboi1_1
 eqw = eqw.drop(eqw.columns[[6,7,8,9,10,11,12]], axis = 1)
 eqw.columns = ['elements', 'ion', 'wl', 'exc', 'loggf', 'ew'] 
 eqw_lim = eqw[(eqw[['ew']] != 0).all(axis=1)]
-spec= pd.read_fwf('5777g4.44z+0.00a+0.00t01-ref107857_4800-5300_xit1.0_bigboi1_1.spec')
+spec= pd.read_fwf('5777g4.44z+0.00a+0.00t01-ref107857_3000-3500_xit1.0_test.spec')
 spec.columns = ['wl','Fn','F'] 
 Fn_arr=spec['Fn'].to_numpy()
 wlspec_arr=spec['wl'].to_numpy()
@@ -71,7 +71,7 @@ eqw_pos_merged = eqw_pos_merged.astype(int)
 plt.plot(wlspec_arr,Fn_arr)
 plt.vlines(max_pos, 0, 1, color = 'r',alpha = 0.5)
 plt.scatter(min_pos, min_mag, color = 'k', marker = '*')
-plt.xlim(4800,4860)
+plt.xlim(3000,3100)
 plt.ylim(0,1.05)
 final_posarr = wleqw_arr[eqw_pos_merged]
 final_magarr = eqw_ew_lim[eqw_pos_merged]

@@ -12,7 +12,8 @@ import pdb
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt 
 import glob 
-filenames = glob.glob('Walmart/5777g4.44z+0.00a+0.00t01-ref107857_4800-5300_xit1.0_bigboi1_*.spec')
+#filenames = glob.glob('5777g4.44z+0.00a+0.00t01-ref107857_4800-5300_xit1.0_Si_spec.txt')
+filenames = glob.glob('5777g4.44z+0.00a+0.00t01-ref107857_4805-5305_xit1.0_Si*.txt')
 list_of_dfs = [pd.read_fwf(filename) for filename in filenames]
 Fn_arr = []
 wlspec_arr = []
@@ -49,8 +50,9 @@ for i in range(len(wlspec_arr)):
         #wldict[arraynum] = wl_entries
         fdict[arraynum] = f_entries
         start += 1
+
 #***reading in equivalent widths
-filenames = glob.glob('Walmart/5777g4.44z+0.00a+0.00t01-ref107857_4800-5300_xit1.0_bigboi1_*.eqw')
+filenames = glob.glob('5777g4.44z+0.00a+0.00t01-ref107857_4800-5300_xit1.0_og_eqw.txt')
 list_of_dfs = [pd.read_fwf(filename) for filename in filenames]
 wleqw_arr = []
 eqw_arr = []
@@ -106,14 +108,14 @@ for i in range(len(fdict)):
         n += 1 
 
 X = np.array(X)
-Y = np.array([[Y_cw1, Y_eqw1],[Y_cw2, Y_eqw2]]) #wack
+Y = np.array(Y_cw1, Y_eqw1,Y_cw2, Y_eqw2) #wack
 pdb.set_trace()
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.25, random_state=42)
 pdb.set_trace()
-np.save('traintestsplits_initial.npy',[X_train,Y_train,X_val, Y_val, X_test, Y_test])
-np.save('nonsplitdata_X.npy', X)
-np.save('nonsplitdata_Y.npy', Y)
+np.save('bigboi2_traintestsplits.npy',[X_train,Y_train,X_val, Y_val, X_test, Y_test])
+np.save('bigboi2_nonsplitdata_X.npy', X)
+np.save('bigboi2_nonsplitdata_Y.npy', Y)
 #want an svr in there too ig 
 #from sklearn import linear_model
 #needs different shape (1d): linear_model.BayesianRidge(), linear_model.ARDRegression(), linear_model.LogisticRegression(), , linear_model.SGDRegressor()

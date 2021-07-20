@@ -9,7 +9,7 @@ import pdb
 import numpy as np 
 import copy 
 #****DICTIONARY CRAP - GETTING OG LINELIST
-with open('lines/grid_lines/vald-4800-5300-for-grid.list') as f:
+with open('vald-6700-6720.txt') as f:
     lines = f.readlines()
 n=0
 p=0
@@ -44,15 +44,15 @@ for i in range(len(keys)):
     keys_alt[i] = keys[i].replace(num,'  1')
 items = list(newdict.values())
 #****READING IN EQW
-eqw = pd.read_fwf('old_linelists/5777g4.44z+0.00a+0.00t01-ref107857_4800-5300_xit1.0_ew.txt')
-#eqw = eqw.drop(eqw.columns[[13,14,15]], axis =1) #for data with comments
+eqw = pd.read_fwf('5777g4.44z+0.00a+0.00t01-ref107857_6700-6720_xit1.0_og_eqw.txt')
+eqw = eqw.drop(eqw.columns[[13,14,15]], axis =1) #for data with comments
 eqw = eqw.drop(eqw.columns[[6,7,8,9,10,11,12]], axis =1) 
 eqw.columns = ['element', 'ion', 'wl', 'exc', 'loggf', 'ew'] 
 
-nonzero_eqw = eqw[eqw.ew > 1][50:100] #determines how long this program will run lol
+nonzero_eqw = eqw[eqw.ew > 1] #determines how long this program will run lol
+
 #print(nonzero_eqw)
 #print(nonzero_eqw[0])
-# pdb.set_trace()
 pairs = []
 lineval = []
 #for loop so it takes the label value from the eqw and map it to the items value... and then adds the items value to an array... 
@@ -66,12 +66,11 @@ for i in range(len(newdict)): #cycling through ALL keys as the first term
         if fkeyitems[j].startswith("'") is False:    
             line = list([fkeyitems[j]])
             lineval.append([header[:],line[:]])#header array     
-            print('lineval'+str(i))
 
 
 #pdb.set_trace()
 line_index=[]
-for i in range(1,len(nonzero_eqw)): #getting all the nonzero indices 
+for i in range(0,len(nonzero_eqw)): #getting all the nonzero indices 
     line_index.append(nonzero_eqw.index[i])
 for i in range(len(line_index)):
     lineval1 = lineval[line_index[i]]
@@ -79,12 +78,11 @@ for i in range(len(line_index)):
         lineval2 = copy.deepcopy(lineval[line_index[j]])
         pairs.append(copy.deepcopy(lineval1))
         pairs.append(lineval2[:])
-        print('pairs'+str(i))
-# pdb.set_trace()
+pdb.set_trace()
 Parr = np.array(pairs)
 cw1 = Parr[0][1][0][2:10]
 cw2 = Parr[1][1][0][2:10]
-start = 4800
+start = 3000
 cw1_new = round(start+5*(np.random.random()),3)
 cw2_new = round(start+5*(np.random.random()),3)
 while cw1_new > cw2_new or cw2_new > start+5:
@@ -96,9 +94,9 @@ Parr[0][1][0] = Parr[0][1][0].replace(cw1,str(cw1_new))
 Parr[1][1][0] = Parr[1][1][0].replace(cw2,str(cw2_new))
 for i in range(2,int(len(pairs))-1,2):
     prev_line = float(Parr[i-1][1][0][2:7])
-    if prev_line > 5295.0:
-        prev_line = 4800.0
-        start = 4795.0
+    if prev_line > 9995.0:
+        prev_line = 3000.0
+        start = 2995.0
     start += 5
     cw1 = Parr[i][1][0][2:10]
     cw2 = Parr[i+1][1][0][2:10]
@@ -113,9 +111,7 @@ for i in range(2,int(len(pairs))-1,2):
     Parr[i][1][0] = Parr[i][1][0].replace(cw1,str(cw1_new))
     Parr[i+1][1][0] = Parr[i+1][1][0].replace(cw2,str(cw2_new))
     print(i)
-# pdb.set_trace()
-#np.save('vald-4800-5300_Parr.npy', Parr)    
-with open('test_1.txt', 'w') as f:
+with open('6700-6720_pairedlinelist.txt', 'w') as f:
     for i in range(len(Parr)):
         f.writelines(Parr[i][0][0])
         f.write('\n')
