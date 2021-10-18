@@ -1,9 +1,10 @@
 *.txt
 *.npy
-*.ipynb
+#*.ipynb
 *.pic
 *.spec
 *.eqw
+*.pptx
 
 lines/**
 lithium_pairs/**
