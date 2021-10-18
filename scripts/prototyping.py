@@ -241,10 +241,10 @@ def write_pairs_line_list(line_list: Dict, output_path: str):
   # Figure out mapping from line -> header...
   lines = [line for i, value in enumerate(line_collection_dict)
            for line in value.lines]
-  print([line.wavelength for line in lines])
+  # print([line.wavelength for line in lines])
   pairs = permutations(lines, 2)
-  print(len(lines))
-  print(len(list(pairs)))
+  # print(len(lines))
+  # print(len(list(pairs)))
 
   # Edit wavelengths
   start_wavelength = 3000  # angstroms
